@@ -17,10 +17,15 @@ public class DBConnectionManager {
     private Connection connection;
 
     public void setConnection(Connection connection) {
+
+
+
         this.connection = connection;
     }
 
     public Connection getConnection() {
+
+        System.out.println("connection = " + connection);
         return this.connection;
     }
 
@@ -51,17 +56,22 @@ public class DBConnectionManager {
             "('D','******','d@gmail.com','4') , " +
             "('E','******','e@gmail.com','5')";
 
+    //public static String DATABASE_URL = "jdbc:derby:./db/user-platform;create=true";
+
+    public static String DATABASE_URL = "jdbc:derby:/Users/linzehuan/db/user-platform;create=true";
 
     public static void main(String[] args) throws Exception {
 //        通过 ClassLoader 加载 java.sql.DriverManager -> static 模块 {}
 //        DriverManager.setLogWriter(new PrintWriter(System.out));
 //
 //        Class.forName("org.apache.derby.jdbc.EmbeddedDriver");
+          Class.forName("org.apache.derby.jdbc.ClientDriver");
+
 //        Driver driver = DriverManager.getDriver("jdbc:derby:/db/user-platform;create=true");
 //        Connection connection = driver.connect("jdbc:derby:/db/user-platform;create=true", new Properties());
 
-        String databaseURL = "jdbc:derby:./db/user-platform;create=true";
-        Connection connection = DriverManager.getConnection(databaseURL);
+
+        Connection connection = DriverManager.getConnection(DATABASE_URL);
 
         Statement statement = connection.createStatement();
         // 删除 users 表

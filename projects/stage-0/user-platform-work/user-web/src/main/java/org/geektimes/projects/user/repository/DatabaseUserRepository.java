@@ -43,7 +43,14 @@ public class DatabaseUserRepository implements UserRepository {
 
     @Override
     public boolean save(User user) {
-        return false;
+        Collection<User> all = getAll();
+        if (all.stream().anyMatch(u -> u.getEmail().equals(user.getEmail()))) {
+          return false;
+        }
+        return executeUpdate(INSERT_USER_DML_SQL, resultSet -> {
+                    return resultSet == 1;
+                }
+                , COMMON_EXCEPTION_HANDLER, user.getName(), user.getPassword(), user.getEmail(), user.getPhoneNumber());
     }
 
     @Override
@@ -94,6 +101,7 @@ public class DatabaseUserRepository implements UserRepository {
                     // 以 id 为例，  user.setId(resultSet.getLong("id"));
                     setterMethodFromUser.invoke(user, resultValue);
                 }
+                users.add(user);
             }
             return users;
         }, e -> {
@@ -132,11 +140,40 @@ public class DatabaseUserRepository implements UserRepository {
             // ResultSet -> T
             return function.apply(resultSet);
         } catch (Throwable e) {
+            System.out.println(e);
             exceptionHandler.accept(e);
         }
         return null;
     }
 
+
+    protected <T> T executeUpdate(String sql, ThrowableFunction<Integer, T> function, Consumer<Throwable> exceptionHandler, Object... args) {
+        Connection connection = getConnection();
+        try {
+            PreparedStatement preparedStatement = connection.prepareStatement(sql);
+            for (int i = 0; i < args.length; i++) {
+                Object arg = args[i];
+                Class argType = arg.getClass();
+
+                Class wrapperType = wrapperToPrimitive(argType);
+
+                if (wrapperType == null) {
+                    wrapperType = argType;
+                }
+
+                String methodName = preparedStatementMethodMappings.get(argType);
+                Method method = PreparedStatement.class.getMethod(methodName, wrapperToPrimitive(Integer.class), wrapperType);
+                method.invoke(preparedStatement, i + 1, arg);
+
+            }
+            int i = preparedStatement.executeUpdate();
+            return function.apply(i);
+        } catch (Throwable e) {
+            e.printStackTrace();
+            exceptionHandler.accept(e);
+        }
+        return null;
+    }
 
     private static String mapColumnLabel(String fieldName) {
         return fieldName;
